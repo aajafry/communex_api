@@ -7,4 +7,5 @@ export const limiter = rateLimit({
     "too many requests from this IP, please try again later after a minute.",
   legacyHeaders: true,
   skip: (req) => req.method === "GET",
+  validate: { trustProxy: true },
 });

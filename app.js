@@ -13,6 +13,7 @@ import {
 import { corsConfig, limiter } from "./utilities/index.js";
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use(limiter);
 app.use(helmet());

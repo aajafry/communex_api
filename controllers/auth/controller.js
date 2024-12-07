@@ -65,7 +65,7 @@ export const authController = {
       res.cookie("communexToken", `Bearer ${token}`, {
         secure: process.env.NODE_ENV === "production",
         maxAge: maxAge,
-        sameSite: "Lax",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
         httpOnly: true,
       });
 
@@ -99,7 +99,7 @@ export const authController = {
       res.clearCookie("communexToken", {
         secure: process.env.NODE_ENV === "production",
         maxAge: 0,
-        sameSite: "Lax",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
         httpOnly: true,
       });
 
