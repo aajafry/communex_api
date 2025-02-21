@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { verifyToken } from "../utilities/index.js";
 
 /**
  * Middleware to authenticate and authorize requests using a JWT.
@@ -6,10 +7,14 @@ import jwt from "jsonwebtoken";
  *
  * @throws {Error} If the JWT_SECRET environment variable is not set.
  */
-const jwtSecret = process.env.JWT_SECRET;
-if (!jwtSecret) {
-  throw new Error("JWT_SECRET environment variable is not set.");
+
+if (!process.env.ACCESS_TOKEN_SECRET) {
+  throw new Error(
+    "JWT access token secret environment variables must be defined"
+  );
 }
+
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
 
 /**
  * Middleware to check authentication.
@@ -28,28 +33,29 @@ if (!jwtSecret) {
  */
 
 export const AuthCheck = (req, res, next) => {
+  // const { communexToken: authHeader } = req.cookies;
+  const { authorization: authHeader } = req.headers;
+
+  // Ensure the token is provided and formatted correctly
+  if (typeof authHeader !== "string" || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      message: "Authentication token is required.",
+    });
+  }
   try {
-    const authHeader = req.cookies.communexToken;
-    // const { authorization: authHeader } = req.headers;
-
-    // Ensure the token is provided and formatted correctly
-    if (typeof authHeader !== "string" || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        message: "Authentication token is required.",
-      });
-    }
-
     // Extract the token part from "Bearer <token>"
     const token = authHeader.split(" ")[1];
 
     // Verify the token
-    const decoded = jwt.verify(token, jwtSecret);
-    if (!decoded) {
-      return next(new Error("Invalid token."));
-    }
+    const decoded = verifyToken(token, ACCESS_TOKEN_SECRET);
 
     // Attach the decoded user data to the request object
-    req.user = decoded;
+    req.user = {
+      id: decoded.id,
+      name: decoded.name,
+      email: decoded.email,
+      avatar: decoded.avatar,
+    };
     return next();
   } catch (error) {
     console.error("Authentication error:", error.message);

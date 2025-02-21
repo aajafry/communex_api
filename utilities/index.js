@@ -1,7 +1,11 @@
-export { generateToken } from "./generateToken.js";
 export { hashPassword } from "./hashPassword.js";
 export { limiter } from "./limiter.js";
 export { corsConfig } from "./corsConfig.js";
+export {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyToken,
+} from "./jwt.js";
 
 /**
  * Maximum age for cookies or tokens in milliseconds.

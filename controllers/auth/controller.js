@@ -1,6 +1,14 @@
 import { userModel } from "../../models/index.js";
 import bcrypt from "bcrypt";
-import { hashPassword, generateToken, maxAge } from "../../utilities/index.js";
+import {
+  hashPassword,
+  maxAge,
+  generateAccessToken,
+  generateRefreshToken,
+  verifyToken,
+} from "../../utilities/index.js";
+
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
 // Authentication Controller
 export const authController = {
@@ -60,9 +68,11 @@ export const authController = {
         email: user.email,
         avatar: user.avatar,
       };
-      const token = generateToken(payload);
 
-      res.cookie("communexToken", `Bearer ${token}`, {
+      const accessToken = generateAccessToken(payload);
+      const refreshToken = generateRefreshToken(payload);
+
+      res.cookie("communexToken", refreshToken, {
         secure: process.env.NODE_ENV === "production",
         maxAge: maxAge,
         sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
@@ -72,7 +82,7 @@ export const authController = {
       res.json({
         message: `User "${payload.name}" has been logged in successfully.`,
         user: payload,
-        token,
+        accessToken,
       });
     } catch (error) {
       console.error("Error during user login:", error);
@@ -111,6 +121,44 @@ export const authController = {
       res.status(500).json({
         message:
           "An unexpected error occurred during logout. Please try again.",
+        error: error.message,
+      });
+    }
+  },
+
+  // User refresh token
+  refreshToken: async (req, res) => {
+    if (!REFRESH_TOKEN_SECRET) {
+      return res.status(500).json({
+        message:
+          "JWT refresh token secret environment variables must be defined",
+      });
+    }
+    try {
+      const { communexToken: refreshToken } = req.cookies;
+      if (!refreshToken) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const decoded = verifyToken(refreshToken, REFRESH_TOKEN_SECRET);
+
+      const payload = {
+        id: decoded.id,
+        name: decoded.name,
+        email: decoded.email,
+        avatar: decoded.avatar,
+      };
+
+      const accessToken = generateAccessToken(payload);
+      res.json({
+        message: "Token refreshed successfully",
+        accessToken,
+      });
+    } catch (error) {
+      console.error("Error during token refresh:", error);
+      res.status(500).json({
+        message:
+          "An unexpected error occurred during token refresh. Please try again.",
         error: error.message,
       });
     }
